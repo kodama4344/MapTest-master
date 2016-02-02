@@ -2,176 +2,59 @@ package jp.ac.kit.maptest;
 
 
 import android.app.Activity;
+import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.io.*;
 import java.net.Socket;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.Random;
+
+import android.content.res.*;
+import android.text.*;
+import java.security.*;
+import javax.net.ssl.*;
 
 
 public class MainActivity extends Activity implements OnClickListener {
 
+    //private TextView mTextView;
+    private static final String HOST = "192.168.1.12";
+    private static final int PORT = 10000;
+    private static final String TRUSTPASS = "mqttAuth";
     private TextView mTextView;
-    private String mHost = "192.168.1.12";
-    private int mPort = 10000;
+    private EditText usridText;
+    private EditText passText;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_socket);
-        //mTextView = (TextView)findViewById(R.id.socket);
-        mTextView = (TextView)findViewById(R.id.socket);
+        setContentView(R.layout.activity_main);
+        mTextView = (TextView)findViewById(R.id.other);
         Button btn = (Button) findViewById(R.id.button1);
+        usridText = (EditText) findViewById(R.id.editText1);
+        passText = (EditText) findViewById(R.id.editText2);
         btn.setOnClickListener(MainActivity.this);
     }
 
 
-
     @Override
     public void onClick(View v){
+        passText.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_VARIATION_PASSWORD);
 
-        TextView textView = (TextView) findViewById(R.id.textView1);
-        EditText editText = (EditText) findViewById(R.id.editText1);
-        TextView textView2 = (TextView) findViewById(R.id.textView2);
-        EditText editText2 = (EditText) findViewById(R.id.editText2);
+        //ユーザID / パスワードを取得
+        //テスト用　->  ユーザID(test3)  パスワード(test3)
+        String userID = usridText.getText().toString();
+        String password = passText.getText().toString();
 
-        //data取得
-        String str = editText.getText().toString();
-        String str2 = editText2.getText().toString();
-
-        //テキストビューに出力
-        textView.setText(str);
-        textView2.setText(str2);
-
-
-        connect("ibis", "ibis");
-
-            /*
-            @Override
-            public void onClick(View view) {
-                connect("ibis", "ibis");
-            }
-        });
-        */
-    }
-
-
-
-
-    public void connect(String usrID, String pass){
-
-        //第一引数：execute()で入れるパラメータ
-        //第二引数：onProgressUpdate()にいれるパラメータ
-        //第三引数：onPostExecute()に入れるパラメータ
-        new AsyncTask<String,Void,String>(){
-
-            @Override
-            protected String doInBackground(String... params) {
-                Random rnd = new Random();
-                Socket connection = null;
-                BufferedReader reader = null;
-                //BufferedWriter writer = null;
-                String message = "result:";
-                //String url = "http://" + mHost +":" + mPort + mPath;
-                String result = "";
-                String usrID = params[0];
-                String pass = params[1];
-
-                try {
-                    //ソケット
-                    connection = new Socket(mHost, mPort);
-                    reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                    //writer = new BufferedWriter(new OutputStreamWriter(connection.getOutputStream()));
-                    PrintWriter pw =
-                            new PrintWriter(new BufferedWriter(
-                                    new OutputStreamWriter(connection.getOutputStream()) ));
-
-                    //nonce R'を生成
-                    String serv_d = reader.readLine();
-                    //hash(usrID.pass.R,R')生成
-
-                    Double cli_d = rnd.nextDouble();
-                    String hh = usrID + pass + serv_d + cli_d;
-                    message += "hh: " + hh;
-
-
-                    try{
-                        MessageDigest md = MessageDigest.getInstance("SHA-1");
-                        byte[] cli_h = md.digest(hh.getBytes());
-                        message += "cli_h" + printBytes(cli_h);
-                        //(usrID.serv_d.cli_d.cli_h)を送信
-                        //String u_info = usrID + "/" + serv_d + "/" + cli_d + "/" + cli_h.toString();
-                        String u_info = usrID + "/" + serv_d + "/" + cli_d + "/" + printBytes(cli_h);
-                        pw.println(u_info);
-                        pw.flush();
-                    }catch (NoSuchAlgorithmException e){
-                        throw new UnsupportedOperationException(e);
-                    }
-
-
-                    message += "reslut: " + reader.readLine();
-                    //result = Integer.parseInt(tmp);
-
-
-                    /*
-                    //HTTPリクエスト
-                    writer.write("GET " + url + " HTTP/1.1\r\n");
-                    writer.write("Host: " + mHost + "\r\n");
-                    writer.write("User-Agent: " + mUserAgent);
-                    writer.write("Connection: close\r\n");
-                    writer.write("\r\n");
-                    writer.flush();
-
-                    //HTTPレスポンス
-                    String result;
-                    while((result = reader.readLine()) != null) {
-                        message += result;
-                        message += "\n";
-                    }
-                    */
-                } catch (IOException e) {
-                    message = "IOException error: " + e.getMessage();
-                    e.printStackTrace();
-                } catch (Exception e){
-                    e.printStackTrace();
-                    message = "Exception: " + e.getMessage();
-
-                } finally {
-                    try{
-                        reader.close();
-                        connection.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
-                System.out.println(message);
-                return message;
-            }
-
-            //doInBackGroundの結果を受け取る
-            @Override
-            protected void onPostExecute(String result){
-                mTextView.setText(result);
-
-            }
-        }.execute(usrID, pass);
-
-
+        connect(userID, password);
 
     }
 
@@ -184,53 +67,166 @@ public class MainActivity extends Activity implements OnClickListener {
         return s;
     }
 
+    private void startGroupActivity(String pass, String id){
+        String password = pass;
+        String userID = id;
+        Intent intent = new Intent();
+        intent.setClassName("jp.ac.kit.maptest", "jp.ac.kit.maptest.GroupActivity");
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.socket, menu);
-        return true;
+        intent.putExtra("password", password);
+        intent.putExtra("userID", userID);
+        startActivity(intent);
     }
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-        if (id == R.id.action_settings) {
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+
+
+    public void connect(String usrID, String pass){
+        //第一引数：execute()で入れるパラメータ
+        //第二引数：onProgressUpdate()にいれるパラメータ
+        //第三引数：onPostExecute()に入れるパラメータ
+        new AsyncTask<String,Void,String>(){
+
+            @Override
+            protected String doInBackground(String... params) {
+                //SSLSocket
+                SSLSocketFactory SSL_SOCKET_FACTORY = null;
+                SSLSocket sslSock = null;
+                SSLContext sContext = null;
+                KeyStore trustStore = null;
+                TrustManagerFactory tmf = null;
+                KeyManagerFactory kmf = null;
+                Socket socket = null;
+
+                // I/O
+                DataInputStream dis = null;
+                DataOutputStream dos = null;
+                AssetManager as = getResources().getAssets();   //assetsフォルダ
+                InputStream is = null;                          //truststore読み込み
+                ByteBuffer bytebuf = null;
+
+                String message = "";
+                byte[] usrID = params[0].getBytes();
+                byte[] pass = params[1].getBytes();
+
+                // hash
+                byte[] nonceR = null;
+                byte[] nonceRR = null;
+                byte[] hh = null;
+                byte[] hash = null;
+                SecureRandom rr = null;
+
+                boolean authStat = false;
+
+                try {
+                    is = as.open("truststore");
+                    char[] trustPassChar = null;
+                    trustStore = KeyStore.getInstance("BKS");
+                    trustPassChar = TRUSTPASS.toCharArray();
+                    trustStore.load(is, trustPassChar);
+                    tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
+                    tmf.init(trustStore);
+
+                    TrustManager[] trust_manager = null;
+                    trust_manager = tmf.getTrustManagers();
+
+                    sContext = SSLContext.getInstance("TLS");
+                    sContext.init(null, trust_manager, null);
+
+                    SSL_SOCKET_FACTORY = sContext.getSocketFactory();
+                    // コネクション確立
+                    sslSock=(SSLSocket)SSL_SOCKET_FACTORY.createSocket(HOST, PORT);
+                    sslSock.startHandshake();
+                    System.out.println("サーバ認証成功");
+
+                    socket = sslSock;
+
+
+
+                    //nonceRを受信
+                    dis = new DataInputStream(socket.getInputStream());
+                    nonceR = new byte[16];
+                    dis.readFully(nonceR);
+
+                    //nonceR'を生成
+                    nonceRR = new byte[16];
+                    rr = new SecureRandom();
+                    rr.nextBytes(nonceRR);
+
+
+                    //hash値の生成
+                    //hash = SHA1(usrID + pass + nonceR + nonceRR)
+                    bytebuf = ByteBuffer.allocate(usrID.length + pass.length + nonceR.length + nonceRR.length);
+                    bytebuf.put(usrID);
+                    bytebuf.put(pass);
+                    bytebuf.put(nonceR);
+                    bytebuf.put(nonceRR);
+                    hh = bytebuf.array();
+
+                    MessageDigest md = MessageDigest.getInstance("SHA-1");
+                    hash = md.digest(hh);
+
+                    // ユーザID nonce cnonce ハッシュ値をサーバへ送信
+                    dos = new DataOutputStream(socket.getOutputStream());
+                    dos.writeInt(usrID.length);
+                    dos.write(usrID);
+                    dos.write(nonceR);
+                    dos.write(nonceRR);
+                    dos.writeInt(hash.length);
+                    dos.write(hash);
+                    dos.flush();
+
+                    //確認用
+                    //System.out.println(printBytes(nonceR));
+                    //System.out.println(printBytes(nonceRR));
+                    //System.out.println(printBytes(hash));
+
+
+                    //認証結果
+                    authStat = dis.readBoolean();
+                    if(authStat){
+                        System.out.println("クライアント認証成功");
+                        startGroupActivity(printBytes(hash), params[0]);
+
+                    }else{
+                        System.out.println("クライアント認証失敗");
+                        message += "userID / passwordが正しくありません  (test3 / test3)";
+                    }
+
+
+                } catch (IOException e) {
+                    //message = "IOException error: " + e.getMessage();
+                    e.printStackTrace();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                } finally {
+                    try {
+                        if (socket != null) {
+                            socket.close();
+                        }
+                        if (dis != null) {
+                            dis.close();
+                        }
+                        if (dos != null) {
+                            dos.close();
+                        }
+                    } catch (Exception e) {
+                        System.out.println(e.getMessage());
+                    }
+
+                }
+
+                return message;
+            }
+
+            @Override
+            protected void onPostExecute(String result){
+                //System.out.println(result);
+                mTextView.setText(result);
+
+            }
+        }.execute(usrID, pass);
+
     }
+
 }
-
-
-/*
-public class MainActivity extends Activity {
-    MqttAndroidClient mqttAndroidClient;
-
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mqttAndroidClient = new MqttAndroidClient(this, "tcp://192.168.1.12:1883", "piyo"); // (1)
-        try {
-            mqttAndroidClient.connect();  // (2)
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-    @Override
-    public void onPause() {
-        super.onPause();
-        try {
-            mqttAndroidClient.publish("topic/hoge", "hello world".getBytes(), 0, false); // (3)
-        } catch (MqttPersistenceException e) {
-            e.printStackTrace();
-        } catch (MqttException e) {
-            e.printStackTrace();
-        }
-    }
-}
-*/
 
